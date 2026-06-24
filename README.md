@@ -39,9 +39,9 @@ Internet
 
 | Instance | Subnet | Role |
 |----------|--------|------|
-| jammie | Public | Bastion — the only entry point into the environment |
-| cersei | Public | Public instance — not directly reachable, only through jammie |
-| tyrion | Private | Private instance — no public IP, only reachable through jammie |
+| jammie | Public | Bastion, the only entry point into the environment |
+| cersei | Public | Public instance,  not directly reachable, only through jammie |
+| tyrion | Private | Private instance, no public IP, only reachable through jammie |
 
 Named after GoT characters. Cersei and Tyrion can't talk to each other. Fitting.
 
@@ -51,7 +51,7 @@ Named after GoT characters. Cersei and Tyrion can't talk to each other. Fitting.
 
 ### The Problem with IP-Based Rules
 
-Most people configure security groups with IP addresses as sources. That breaks the moment an IP changes — auto scaled instance, new deployment, anything. It also doesn't scale.
+Most people configure security groups with IP addresses as sources. That breaks the moment an IP changes auto scaled instance, new deployment, anything. It also doesn't scale.
 
 The right approach is SG-to-SG referencing. Instead of trusting an IP, you trust a security group ID. AWS checks whether the connecting instance is wearing that badge, regardless of where its IP comes from. New instance with the right SG attached? It automatically gets access without touching a single rule.
 
