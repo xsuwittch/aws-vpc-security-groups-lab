@@ -98,13 +98,13 @@ Laptop  ->  tyrion   BLOCK   private subnet + SG, two independent blocks
 
 What does this design actually protect against?
 
-**Lateral movement** — if cersei is compromised, the attacker is stuck. They can't pivot to tyrion because cersei's SG isn't trusted. Compromising one instance doesn't give you the rest of the environment.
+**Lateral movement** if cersei is compromised, the attacker is stuck. They can't pivot to tyrion because cersei's SG isn't trusted. Compromising one instance doesn't give you the rest of the environment.
 
-**Direct internet exposure** — tyrion has no public IP and lives in a private subnet with no internet gateway route. Even if someone somehow bypassed the SG, the routing doesn't exist to get there from the internet.
+**Direct internet exposure** tyrion has no public IP and lives in a private subnet with no internet gateway route. Even if someone somehow bypassed the SG, the routing doesn't exist to get there from the internet.
 
-**Credential reuse attacks** — the bastion pattern means SSH keys only need to be valid on one public-facing instance. Everything behind it is isolated.
+**Credential reuse attacks** the bastion pattern means SSH keys only need to be valid on one public-facing instance. Everything behind it is isolated.
 
-**Shodan/scanner exposure** — public instances will get found and probed within minutes of launch (more on this below). SGs block everything that isn't explicitly allowed, so scanners see a closed surface.
+**Shodan/scanner exposure** public instances will get found and probed within minutes of launch (more on this below). SGs block everything that isn't explicitly allowed, so scanners see a closed surface.
 
 ---
 
@@ -112,14 +112,14 @@ What does this design actually protect against?
 
 tyrion has two completely independent security controls:
 
-- **Private subnet** — no route from the internet, no public IP, unreachable at the network layer
-- **Security group** — even if routing was somehow misconfigured, the SG still rejects anything not coming from jammie's SG
+- **Private subnet**  no route from the internet, no public IP, unreachable at the network layer
+- **Security group**  even if routing was somehow misconfigured, the SG still rejects anything not coming from jammie's SG
 
 Both have to fail simultaneously for an attacker to reach tyrion. This is what defence in depth actually means in practice not just having multiple tools, but having multiple independent controls where breaking one doesn't break the others.
 
 ---
 
-## VPC Flow Logs — Proof
+## VPC Flow Logs  Proof
 
 Enabled flow logs on the VPC with 1-minute aggregation, sending to CloudWatch Logs. Every connection attempt accepted or rejected shows up with source IP, destination IP, port, and decision.
 
@@ -134,18 +134,18 @@ version | account-id | eni-id | src-ip | dst-ip | src-port | dst-port | protocol
 154.192.43.167 -> 10.0.5.109  port 22  REJECT
 ```
 
-My public IP trying to SSH directly into cersei. Blocked immediately — cersei doesn't trust random IPs, only jammie's SG.
+My public IP trying to SSH directly into cersei. Blocked immediately  cersei doesn't trust random IPs, only jammie's SG.
 
-### jammie SSHing into cersei — ACCEPTED (both directions)
+### jammie SSHing into cersei  ACCEPTED (both directions)
 
 ```
 10.0.7.15 -> 10.0.5.109  port 22  ACCEPT
 10.0.5.109 -> 10.0.7.15  port 22  ACCEPT
 ```
 
-jammie's private IP to cersei's private IP, both logged as ACCEPT. The second line is the return traffic being automatically allowed back through. That's stateful behavior — the SG tracks the connection and permits the response without needing a separate outbound rule.
+jammie's private IP to cersei's private IP, both logged as ACCEPT. The second line is the return traffic being automatically allowed back through. That's stateful behavior  the SG tracks the connection and permits the response without needing a separate outbound rule.
 
-### jammie SSHing into tyrion — ACCEPTED
+### jammie SSHing into tyrion  ACCEPTED
 
 ```
 10.0.7.15 -> 10.0.138.37  port 22  ACCEPT
@@ -154,7 +154,7 @@ jammie's private IP to cersei's private IP, both logged as ACCEPT. The second li
 
 Same pattern. jammie is trusted, connection goes through, stateful return traffic logged.
 
-### cersei attempting to SSH into tyrion — REJECTED
+### cersei attempting to SSH into tyrion  REJECTED
 
 ```
 10.0.5.109 -> 10.0.138.37  port 22  REJECT
@@ -209,7 +209,7 @@ scp -i "tywin.pem" -o ProxyJump=ubuntu@<jammie-public-ip> tywin.pem ubuntu@<cers
 
 **SG-to-SG referencing is the correct pattern for multi-tier AWS architecture.** IP-based rules are fragile and don't scale. Identity-based rules do.
 
-**Stateful vs stateless matters operationally.** Security groups track connection state and auto-allow return traffic. NACLs don't — they evaluate every packet independently in both directions. Confusing the two leads to broken rules that are hard to debug.
+**Stateful vs stateless matters operationally.** Security groups track connection state and auto-allow return traffic. NACLs don't  they evaluate every packet independently in both directions. Confusing the two leads to broken rules that are hard to debug.
 
 **Flow logs are not optional for verification.** You cannot trust that a security rule is working without checking the logs. This is also exactly what SOC analysts look at when investigating lateral movement attempts in production the same ACCEPT/REJECT patterns at scale.
 
