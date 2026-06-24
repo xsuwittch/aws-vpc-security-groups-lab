@@ -1,4 +1,4 @@
-# AWS VPC Security Groups — Proving the Concepts with Real Traffic
+# AWS VPC Security Groups 
 
 **Author:** Muhammad Ammar Rana ([@xsuwittch](https://github.com/xsuwittch))
 **Date:** June 2026 | **Region:** ap-south-1 (Mumbai)
@@ -7,7 +7,7 @@
 
 ## Why I Built This
 
-Reading about security groups is one thing. Actually watching a REJECT hit the logs the moment you break a rule is different. I wanted to prove the concepts — SG-to-SG referencing, stateful behavior, defence in depth — with real traffic and real evidence, not just trust that the theory works.
+Reading about security groups is one thing. Actually watching a REJECT hit the logs the moment you break a rule is different. I wanted to prove the concepts of SG-to-SG referencing, stateful behavior, defence in depth with real traffic and real evidence as practicle works help me understand concept better then any theory could.
 
 Everything in this writeup is verified through VPC Flow Logs.
 
@@ -79,7 +79,7 @@ Only instances carrying jammie's SG can get in. An IP hitting cersei directly ge
 |-----------|----------|------|--------|
 | Inbound | SSH | 22 | sg-07bc69639c7fd90aa |
 
-Same rule. Only jammie gets through. cersei and tyrion are in the same VPC but cannot talk to each other — cersei's SG isn't in tyrion's trust list.
+Same rule. Only jammie gets through. cersei and tyrion are in the same VPC but cannot talk to each other cersei's SG isn't in tyrion's trust list.
 
 ### Access Matrix
 
@@ -115,20 +115,20 @@ tyrion has two completely independent security controls:
 - **Private subnet** — no route from the internet, no public IP, unreachable at the network layer
 - **Security group** — even if routing was somehow misconfigured, the SG still rejects anything not coming from jammie's SG
 
-Both have to fail simultaneously for an attacker to reach tyrion. This is what defence in depth actually means in practice — not just having multiple tools, but having multiple independent controls where breaking one doesn't break the others.
+Both have to fail simultaneously for an attacker to reach tyrion. This is what defence in depth actually means in practice not just having multiple tools, but having multiple independent controls where breaking one doesn't break the others.
 
 ---
 
 ## VPC Flow Logs — Proof
 
-Enabled flow logs on the VPC with 1-minute aggregation, sending to CloudWatch Logs. Every connection attempt — accepted or rejected — shows up with source IP, destination IP, port, and decision.
+Enabled flow logs on the VPC with 1-minute aggregation, sending to CloudWatch Logs. Every connection attempt accepted or rejected shows up with source IP, destination IP, port, and decision.
 
 Flow log format:
 ```
 version | account-id | eni-id | src-ip | dst-ip | src-port | dst-port | protocol | packets | bytes | start | end | action | status
 ```
 
-### Laptop hitting cersei directly — REJECTED
+### Laptop hitting cersei directly REJECTED
 
 ```
 154.192.43.167 -> 10.0.5.109  port 22  REJECT
@@ -160,7 +160,7 @@ Same pattern. jammie is trusted, connection goes through, stateful return traffi
 10.0.5.109 -> 10.0.138.37  port 22  REJECT
 ```
 
-cersei and tyrion are in the same VPC. Same account, same region, adjacent subnets. Still blocked. cersei's SG isn't in tyrion's trust list — the SG doesn't care about network proximity, only about identity.
+cersei and tyrion are in the same VPC. Same account, same region, adjacent subnets. Still blocked. cersei's SG isn't in tyrion's trust list the SG doesn't care about network proximity, only about identity.
 
 ---
 
@@ -211,7 +211,7 @@ scp -i "tywin.pem" -o ProxyJump=ubuntu@<jammie-public-ip> tywin.pem ubuntu@<cers
 
 **Stateful vs stateless matters operationally.** Security groups track connection state and auto-allow return traffic. NACLs don't — they evaluate every packet independently in both directions. Confusing the two leads to broken rules that are hard to debug.
 
-**Flow logs are not optional for verification.** You cannot trust that a security rule is working without checking the logs. This is also exactly what SOC analysts look at when investigating lateral movement attempts in production — the same ACCEPT/REJECT patterns at scale.
+**Flow logs are not optional for verification.** You cannot trust that a security rule is working without checking the logs. This is also exactly what SOC analysts look at when investigating lateral movement attempts in production the same ACCEPT/REJECT patterns at scale.
 
 **Default deny is your baseline, not your backup.** Nothing reaches an instance unless explicitly permitted. The internet will start probing your public IPs within minutes. Let the logs show you what's being blocked.
 
